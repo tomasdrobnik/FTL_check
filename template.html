@@ -112,6 +112,7 @@
   }
   .stat-value.stat-open { color: var(--accent); }
   .stat-value.stat-handled { color: var(--ok); }
+  .stat-value.stat-new { color: var(--text-dim); }
   .stat-label {
     font-size: 10px;
     letter-spacing: 0.07em;
@@ -511,10 +512,16 @@
       <span class="stat-value mono stat-handled" id="statHandled">0</span>
       <span class="stat-label">Handled</span>
     </div>
+    <div class="board-divider"></div>
+    <div class="stat">
+      <span class="stat-value mono stat-new" id="statNew">0</span>
+      <span class="stat-label">New</span>
+    </div>
     <div class="filters" role="group" aria-label="Filter violations">
       <button class="filter-btn active" data-filter="all">All</button>
       <button class="filter-btn" data-filter="open">Open</button>
       <button class="filter-btn" data-filter="handled">Handled</button>
+      <button class="filter-btn" data-filter="new">New</button>
     </div>
   </div>
 
@@ -659,7 +666,7 @@
     crewList.innerHTML = "";
     const groups = groupByCrew(RECORDS);
 
-    let totalCount = 0, handledCount = 0;
+    let totalCount = 0, handledCount = 0, newCount = 0;
     let anyVisible = false;
 
     for (const [name, recs] of groups) {
@@ -669,10 +676,12 @@
       const groupHandledCount = recs.filter(isHandled).length;
       totalCount += recs.length;
       handledCount += groupHandledCount;
+      newCount += recs.filter(r => r._new).length;
 
       const visibleRecs = recs.filter(r => {
         if (currentFilter === "open" && isHandled(r)) return false;
         if (currentFilter === "handled" && !isHandled(r)) return false;
+        if (currentFilter === "new" && !r._new) return false;
         return matchesSearch(r, currentSearch);
       });
       if (visibleRecs.length === 0) continue;
@@ -756,6 +765,7 @@
     document.getElementById("statTotal").textContent = totalCount;
     document.getElementById("statOpen").textContent = totalCount - handledCount;
     document.getElementById("statHandled").textContent = handledCount;
+    document.getElementById("statNew").textContent = newCount;
   }
 
   function renderMeta() {
@@ -804,6 +814,17 @@
       RECORDS = [];
       META = {};
     }
+    // Carry a "handled" mark forward when a duty gets updated (new _link_id):
+    // _aliases holds the superseded link id(s), so a previously-cleared duty
+    // doesn't silently reopen just because its export was refreshed.
+    let migrated = false;
+    for (const r of RECORDS) {
+      if (handled[r._link_id] === undefined && (r._aliases || []).some(a => handled[a])) {
+        handled[r._link_id] = true;
+        migrated = true;
+      }
+    }
+    if (migrated) saveHandled(handled);
     renderMeta();
     render();
   }
