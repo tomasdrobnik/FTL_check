@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FTL Violation Log</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%E2%9C%88%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #F0F2ED;
+    --surface: #FFFFFF;
+    --surface-2: #F7F9F4;
+    --border: #D7DCD1;
+    --text: #172023;
+    --text-dim: #57666B;
+    --accent: #B85C1C;
+    --accent-soft: #F1E1D2;
+    --ok: #1E8F63;
+    --ok-soft: #DCEFE6;
+    --switch-track-off: #E3D9CC;
+    --shadow: 0 1px 2px rgba(23,32,35,0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10161A;
+      --surface: #171F24;
+      --surface-2: #1C252B;
+      --border: #2A363D;
+      --text: #E8EEF0;
+      --text-dim: #8FA3AA;
+      --accent: #FF9142;
+      --accent-soft: #3A2A1C;
+      --ok: #3FCB93;
+      --ok-soft: #1B3A2E;
+      --switch-track-off: #3A3025;
+      --shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10161A;
+    --surface: #171F24;
+    --surface-2: #1C252B;
+    --border: #2A363D;
+    --text: #E8EEF0;
+    --text-dim: #8FA3AA;
+    --accent: #FF9142;
+    --accent-soft: #3A2A1C;
+    --ok: #3FCB93;
+    --ok-soft: #1B3A2E;
+    --switch-track-off: #3A3025;
+    --shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+
+  * { box-sizing: border-box; }
+  html { background: var(--bg); }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+    padding: 20px 16px 60px;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; }
+
+  h1 {
+    font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 0.01em;
+    margin: 0 0 2px;
+    text-wrap: balance;
+  }
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 12.5px;
+    margin: 0 0 18px;
+  }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  .board {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    position: sticky;
+    top: 12px;
+    z-index: 5;
+  }
+  .stat { display: flex; flex-direction: column; gap: 2px; min-width: 64px; }
+  .stat-value {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-value.stat-open { color: var(--accent); }
+  .stat-value.stat-handled { color: var(--ok); }
+  .stat-label {
+    font-size: 10px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .board-divider { width: 1px; align-self: stretch; background: var(--border); }
+  .filters { display: flex; gap: 6px; margin-left: auto; }
+  .filter-btn {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 7px 12px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-dim);
+    cursor: pointer;
+  }
+  .filter-btn:hover { color: var(--text); }
+  .filter-btn.active {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--text);
+  }
+  .filter-btn:focus-visible, .handle-switch:focus-visible, .row-expand:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 9px 12px;
+    margin-bottom: 14px;
+    position: sticky;
+    top: 78px;
+    z-index: 4;
+  }
+  .search-icon { color: var(--text-dim); font-size: 13px; flex: none; }
+  .search-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: none;
+    color: var(--text);
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 13px;
+  }
+  .search-input:focus { outline: none; }
+  .search-input::placeholder { color: var(--text-dim); }
+  .search-input::-webkit-search-cancel-button { cursor: pointer; }
+  .search-clear {
+    flex: none;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 6px;
+    font-size: 11px;
+    padding: 3px 8px;
+    cursor: pointer;
+  }
+  .search-clear[hidden] { display: none; }
+
+  .crew-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .crew-header {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .crew-name {
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-weight: 600;
+    font-size: 15.5px;
+  }
+  .crew-code {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+  .crew-progress {
+    margin-left: auto;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .crew-progress b { color: var(--ok); font-weight: 600; }
+
+  .violation-list { list-style: none; margin: 0; padding: 0; }
+  .violation-row { border-top: 1px solid var(--border); }
+  .violation-row:first-child { border-top: none; }
+  .row-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+  }
+  .row-main[data-handled="true"] { opacity: 0.55; }
+  .row-date {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    width: 78px;
+    flex: none;
+  }
+  .row-body { flex: 1; min-width: 0; }
+  .row-route {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 1px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .row-route::-webkit-scrollbar { height: 3px; }
+  .new-tag {
+    flex: none;
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--bg);
+    background: var(--accent);
+    border-radius: 3px;
+    padding: 1px 5px;
+  }
+  .row-reasons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 5px;
+  }
+  .reason-chip {
+    font-size: 11px;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 5px;
+    padding: 2px 7px;
+    line-height: 1.4;
+  }
+  .row-link {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 5px;
+  }
+  .row-expand {
+    flex: none;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 6px;
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .row-expand:hover { color: var(--text); }
+
+  .handle-switch {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 4px 2px;
+  }
+  .switch-track {
+    width: 34px;
+    height: 18px;
+    border-radius: 10px;
+    background: var(--switch-track-off);
+    border: 1px solid var(--border);
+    position: relative;
+    transition: background 0.15s ease;
+  }
+  .switch-track::after {
+    content: "";
+    position: absolute;
+    top: 1px; left: 1px;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--surface);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    transition: transform 0.15s ease;
+  }
+  .handle-switch[aria-pressed="true"] .switch-track {
+    background: var(--ok);
+    border-color: var(--ok);
+  }
+  .handle-switch[aria-pressed="true"] .switch-track::after { transform: translateX(16px); }
+  .switch-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    width: 58px;
+  }
+  .handle-switch[aria-pressed="true"] .switch-label { color: var(--ok); }
+
+  .row-detail {
+    padding: 4px 16px 14px 106px;
+    background: var(--surface-2);
+    border-top: 1px dashed var(--border);
+  }
+  .row-detail[hidden] { display: none; }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px 16px;
+    margin-top: 8px;
+  }
+  .detail-item dt {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    margin: 0;
+  }
+  .detail-item dd {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    margin: 1px 0 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .empty-state {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 30px 10px;
+    font-size: 13px;
+  }
+
+  footer.build-note {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 11px;
+    margin-top: 24px;
+  }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+  @media (max-width: 520px) {
+    .row-date { width: 58px; font-size: 11.5px; }
+    .row-detail { padding-left: 16px; }
+    .board { top: 6px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>FTL Violation Log</h1>
+  <p class="subtitle">Deduplicated flight duty period &amp; rest violations, 15 rolling 3-day exports merged, re-exported duties kept at their latest version, latest duty 20 Sep &middot; grouped by crew member &middot; two-pilot duties are linked, so marking one pilot handled clears both</p>
+
+  <div class="board">
+    <div class="stat">
+      <span class="stat-value mono" id="statTotal">0</span>
+      <span class="stat-label">Total</span>
+    </div>
+    <div class="board-divider"></div>
+    <div class="stat">
+      <span class="stat-value mono stat-open" id="statOpen">0</span>
+      <span class="stat-label">Open</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value mono stat-handled" id="statHandled">0</span>
+      <span class="stat-label">Handled</span>
+    </div>
+    <div class="filters" role="group" aria-label="Filter violations">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="open">Open</button>
+      <button class="filter-btn" data-filter="handled">Handled</button>
+    </div>
+  </div>
+
+  <div class="search-bar">
+    <span class="search-icon">&#128269;</span>
+    <input type="search" id="searchInput" class="search-input" autocomplete="off"
+           placeholder="Search pilot, crew code, date, route or reason&hellip;">
+    <button type="button" class="search-clear" id="searchClear" hidden>Clear</button>
+  </div>
+
+  <main id="crewList"></main>
+
+  <footer class="build-note">Rebuilt 2026-09-28 from 15 exports &middot; source: github.com/tomasdrobnik/FTL_check</footer>
+</div>
+
+<script>
+  const RECORDS = [{"Crew member": "Juraj Matúšek", "Crew code": "MAT", "Duty end date [UTC]": "2026-09-19", "Violation": "Yes", "Route ICAO": "LFMN - LZIB", "Duty end time [UTC]": "19:05:00", "FDP end time [UTC]": "18:35:00", "FDP extension": "", "Split duty time": "", "Discretion for extension": "", "Rest reduction (preceding duty)": "", "Rest required before": "10:00:00", "Rest actual before": "25:55", "Rest required after": "12:00:00", "Rest actual after": "11:10:00", "Planned duty length": "03:00:00", "FDP length": "02:20:00", "Max FDP": "11:15:00", "Duty length": "02:50:00", "Planned FDP length": "02:30:00", "Rest [36h]": "31:50", "_reasons": ["Rest after this duty (11:10:00) below required (12:00:00) — same gap is flagged as 'Rest before' on the next duty"], "_id": "4bb7e935fe9e", "_link_id": "385440c0c01d", "_link_partners": ["Marian Januscak"], "_aliases": ["9b2ffd8fdbc5"], "_new": true}, {"Crew member": "Juraj Matúšek", "Crew code": "MAT", "Duty end date [UTC]": "2026-09-20", "Violation": "Yes", "Route ICAO": "LZIB - LDZD - LZIB", "Duty end time [UTC]": "10:40:00", "FDP end time [UTC]": "10:10:00", "FDP extension": "", "Split duty time": "", "Discretion for extension": "", "Rest reduction (preceding duty)": "", "Rest required before": "12:00:00", "Rest actual before": "11:10:00", "Rest required after": "12:00:00", "Rest actual after": ">1year", "Planned duty length": "04:40:00", "FDP length": "03:55:00", "Max FDP": "13:00:00", "Duty length": "04:25:00", "Planned FDP length": "04:10:00", "Rest [36h]": "47:25", "_reasons": ["Rest before (11:10:00) below required (12:00:00)"], "_id": "757fe9337545", "_link_id": "cbdb093792c0", "_link_partners": ["Marian Januscak"], "_aliases": ["dab9f4e8bcad"], "_new": true}, {"Crew member": "Kamil Stolpa", "Crew code": "STO", "Duty end date [UTC]": "2026-08-19", "Violation": "Yes", "Route ICAO": "LK010 - LK015 - LK999 - LK010 - LZ999 - LZIB - LK010", "Duty end time [UTC]": "22:05:00", "FDP end time [UTC]": "21:35:00", "FDP extension": "", "Split duty time": "", "Discretion for extension": "", "Rest reduction (preceding duty)": "", "Rest required before": "12:00:00", "Rest actual before": "18:55:00", "Rest required after": "12:00:00", "Rest actual after": ">1year", "Planned duty length": "11:05:00", "FDP length": "10:35:00", "Max FDP": "10:00:00", "Duty length": "11:05:00", "Planned FDP length": "10:35:00", "Rest [36h]": "63:05", "_reasons": ["FDP length 10:35:00 exceeds Max FDP 10:00:00"], "_id": "0c62170433db", "_link_id": "0c62170433db", "_link_partners": [], "_aliases": [], "_new": true}, {"Crew member": "Marian Januscak", "Crew code": "JAN", "Duty end date [UTC]": "2026-09-19", "Violation": "Yes", "Route ICAO": "LFMN - LZIB", "Duty end time [UTC]": "19:05:00", "FDP end time [UTC]": "18:35:00", "FDP extension": "", "Split duty time": "", "Discretion for extension": "", "Rest reduction (preceding duty)": "", "Rest required before": "10:00:00", "Rest actual before": "25:55", "Rest required after": "12:00:00", "Rest actual after": "11:10:00", "Planned duty length": "03:00:00", "FDP length": "02:20:00", "Max FDP": "11:15:00", "Duty length": "02:50:00", "Planned FDP length": "02:30:00", "Rest [36h]": "31:50", "_reasons": ["Rest after this duty (11:10:00) below required (12:00:00) — same gap is flagged as 'Rest before' on the next duty"], "_id": "4dc3c478e929", "_link_id": "385440c0c01d", "_link_partners": ["Juraj Matúšek"], "_aliases": ["9b2ffd8fdbc5"], "_new": true}, {"Crew member": "Marian Januscak", "Crew code": "JAN", "Duty end date [UTC]": "2026-09-20", "Violation": "Yes", "Route ICAO": "LZIB - LDZD - LZIB", "Duty end time [UTC]": "10:40:00", "FDP end time [UTC]": "10:10:00", "FDP extension": "", "Split duty time": "", "Discretion for extension": "", "Rest reduction (preceding duty)": "", "Rest required before": "12:00:00", "Rest actual before": "11:10:00", "Rest required after": "12:00:00", "Rest actual after": "22:20:00", "Planned duty length": "04:40:00", "FDP length": "03:55:00", "Max FDP": "13:00:00", "Duty length": "04:25:00", "Planned FDP length": "04:10:00", "Rest [36h]": "47:25", "_reasons": ["Rest before (11:10:00) below required (12:00:00)"], "_id": "0467dc760215", "_link_id": "cbdb093792c0", "_link_partners": ["Juraj Matúšek"], "_aliases": ["dab9f4e8bcad"], "_new": true}, {"Crew member": "Martin Gargulak", "Crew code": "GAR", "Duty end date [UTC]": "2026-08-25", "Violation": "Yes", "Route ICAO": "LZ999 - LZNI - LZ999 - LZZI", "Duty end time [UTC]": "14:53:00", "FDP end time [UTC]": "14:23:00", "FDP extension": "", "Split duty time": "", "Discretion for extension": "", "Rest reduction (preceding duty)": "", "Rest required before": "10:00:00", "Rest actual before": "350:12", "Rest required after": "12:00:00", "Rest actual after": ">1year", "Planned duty length": "10:52:00", "FDP length": "10:22:00", "Max FDP": "10:00:00", "Duty length": "10:52:00", "Planned FDP length": "10:22:00", "Rest [36h]": "10:52:00", "_reasons": ["FDP length 10:22:00 exceeds Max FDP 10:00:00"], "_id": "ee71db89413c", "_link_id": "ee71db89413c", "_link_partners": [], "_aliases": [], "_new": true}, {"Crew member": "Martin Gargulak", "Crew code": "GAR", "Duty end date [UTC]": "2026-08-25", "Violation": "Yes", "Route ICAO": "LZ999 - LZZI", "Duty end time [UTC]": "16:30:00", "FDP end time [UTC]": "16:00:00", "FDP extension": "", "Split duty time": "", "Discretion for extension": "", "Rest reduction (preceding duty)": "", "Rest required before": "10:00:00", "Rest actual before": "351:26", "Rest required after": "12:00:00", "Rest actual after": ">1year", "Planned duty length": "11:15:00", "FDP length": "10:45:00", "Max FDP": "10:00:00", "Duty length": "11:15:00", "Planned FDP length": "10:45:00", "Rest [36h]": "11:15:00", "_reasons": ["FDP length 10:45:00 exceeds Max FDP 10:00:00"], "_id": "f4d1cebc6188", "_link_id": "f4d1cebc6188", "_link_partners": [], "_aliases": [], "_new": true}, {"Crew member": "Martin Ondrejka", "Crew code": "OND", "Duty end date [UTC]": "2026-08-18", "Violation": "Yes", "Route ICAO": "LZIB - LKMT - LZIB - LTFE - LZIB", "Duty end time [UTC]": "21:10:00", "FDP end time [UTC]": "20:40:00", "FDP extension": "01:00:00", "Split duty time": "", "Discretion for extension": "", "Rest reduction (preceding duty)": "", "Rest required before": "14:00:00", "Rest actual before": "34:10", "Rest required after": "16:45:00", "Rest actual after": "33:50", "Planned duty length": "14:45:00", "FDP length": "14:15:00", "Max FDP": "13:00:00", "Duty length": "14:45:00", "Planned FDP length": "14:15:00", "Rest [36h]": "56:40", "_reasons": ["FDP length 14:15:00 exceeds Max FDP 13:00:00"], "_id": "a58c6f13c74d", "_link_id": "7b4a8ba59e56", "_link_partners": ["Milan Hankovský"], "_aliases": [], "_new": true}, {"Crew member": "Martin Ondrejka", "Crew code": "OND", "Duty end date [UTC]": "2026-09-07", "Violation": "Yes", "Route ICAO": "LZIB - UBBB - LRBS - LZIB", "Duty end time [UTC]": "21:55:00", "FDP end time [UTC]": "21:25:00", "FDP extension": "01:00:00", "Split duty time": "", "Discretion for extension": "", "Rest reduction (preceding duty)": "", "Rest required before": "14:00:00", "Rest actual before": "57:55", "Rest required after": "20:30:00", "Rest actual after": ">1year", "Planned duty length": "17:50:00", "FDP length": "18:00:00", "Max FDP": "12:55:00", "Duty length": "18:30:00", "Planned FDP length": "17:20:00", "Rest [36h]": "18:30:00", "_reasons": ["FDP length 18:00:00 exceeds Max FDP 12:55:00", "Duty length 18:30:00 exceeds planned 17:50:00"], "_id": "4a9f67e90b49", "_link_id": "f43bd7064a78", "_link_partners": ["Milan Hankovský"], "_aliases": [], "_new": true}, {"Crew member": "Martin Širko", "Crew code": "SIR", "Duty end date [UTC]": "2026-08-18", "Violation": "Yes", "Route ICAO": "LZTT - LZIB - LDSP - LZIB", "Duty end time [UTC]": "16:40:00", "FDP end time [UTC]": "16:10:00", "FDP extension": "", "Split duty time": "", "Discretion for extension": "", "Rest reduction (preceding duty)": "", "Rest required before": "12:00:00", "Rest actual before": "281:51", "Rest required after": "12:00:00", "Rest actual after": "11:20:00", "Planned duty length": "05:55:00", "FDP length": "05:50:00", "Max FDP": "12:30:00", "Duty length": "06:20:00", "Planned FDP length": "05:25:00", "Rest [36h]": "06:20:00", "_reasons": ["Duty length 06:20:00 exceeds planned 05:55:00"], "_id": "6cbf5f38b912", "_link_id": "433725c2018c", "_link_partners": ["Miroslav Stejskal"], "_aliases": ["9b2b670e63e4"], "_new": true}, {"Crew member": "Martin Širko", "Crew code": "SIR", "Duty end date [UTC]": "2026-08-19", "Violation": "Yes", "Route ICAO": "LZIB - LZTT", "Duty end time [UTC]": "06:19:00", "FDP end time [UTC]": "05:49:00", "FDP extension": "", "Split duty time": "", "Discretion for extension": "", "Rest reduction (preceding duty)": "", "Rest required before": "12:00:00", "Rest actual before": "11:20:00", "Rest required after": "10:00:00", "Rest actual after": "22:11:00", "Planned duty length": "02:10:00", "FDP length": "01:49:00", "Max FDP": "13:00:00", "Duty length": "02:19:00", "Planned FDP length": "01:40:00", "Rest [36h]": "19:59:00", "_reasons": ["Rest before (11:20:00) below required (12:00:00)", "Duty length 02:19:00 exceeds planned 02:10:00"], "_id": "d685ea534ded", "_link_id": "4165062da33e", "_link_partners": ["Miroslav Stejskal"], "_aliases": [], "_new": true}, {"Crew member": "Milan Hankovský", "Crew code": "HNK", "Duty end date [UTC]": "2026-08-18", "Violation": "Yes", "Route ICAO": "LZIB - LKMT - LZIB - LTFE - LZIB", "Duty end time [UTC]": "21:10:00", "FDP end time [UTC]": "20:40:00", "FDP extension": "01:00:00", "Split duty time": "", "Discretion for extension": "", "Rest reduction (preceding duty)": "", "Rest required before": "14:00:00", "Rest actual before": "34:10", "Rest required after": "16:45:00", "Rest actual after": "33:50", "Planned duty length": "14:45:00", "FDP length": "14:15:00", "Max FDP": "13:00:00", "Duty length": "14:45:00", "Planned FDP length": "14:15:00", "Rest [36h]": "56:40", "_reasons": ["FDP length 14:15:00 exceeds Max FDP 13:00:00"], "_id": "e4feb3be2044", "_link_id": "7b4a8ba59e56", "_link_partners": ["Martin Ondrejka"], "_aliases": [], "_new": true}, {"Crew member": "Milan Hankovský", "Crew code": "HNK", "Duty end date [UTC]": "2026-09-07", "Violation": "Yes", "Route ICAO": "LZIB - UBBB - LRBS - LZIB", "Duty end time [UTC]": "21:55:00", "FDP end time [UTC]": "21:25:00", "FDP extension": "01:00:00", "Split duty time": "", "Discretion for extension": "", "Rest reduction (preceding duty)": "", "Rest required before": "14:00:00", "Rest actual before": "179:10", "Rest required after": "20:30:00", "Rest actual after": "2114:05", "Planned duty length": "17:50:00", "FDP length": "18:00:00", "Max FDP": "12:55:00", "Duty length": "18:30:00", "Planned FDP length": "17:20:00", "Rest [36h]": "18:30:00", "_reasons": ["FDP length 18:00:00 exceeds Max FDP 12:55:00", "Duty length 18:30:00 exceeds planned 17:50:00"], "_id": "8675f3336a5e", "_link_id": "f43bd7064a78", "_link_partners": ["Martin Ondrejka"], "_aliases": [], "_new": true}, {"Crew member": "Miroslav Stejskal", "Crew code": "STJ", "Duty end date [UTC]": "2026-08-18", "Violation": "Yes", "Route ICAO": "LZTT - LZIB - LDSP - LZIB", "Duty end time [UTC]": "16:40:00", "FDP end time [UTC]": "16:10:00", "FDP extension": "", "Split duty time": "", "Discretion for extension": "", "Rest reduction (preceding duty)": "", "Rest required before": "10:00:00", "Rest actual before": "115:34", "Rest required after": "12:00:00", "Rest actual after": "11:20:00", "Planned duty length": "05:55:00", "FDP length": "05:50:00", "Max FDP": "12:30:00", "Duty length": "06:20:00", "Planned FDP length": "05:25:00", "Rest [36h]": "06:20:00", "_reasons": ["Duty length 06:20:00 exceeds planned 05:55:00"], "_id": "61685e78ed59", "_link_id": "433725c2018c", "_link_partners": ["Martin Širko"], "_aliases": ["9b2b670e63e4"], "_new": true}, {"Crew member": "Miroslav Stejskal", "Crew code": "STJ", "Duty end date [UTC]": "2026-08-19", "Violation": "Yes", "Route ICAO": "LZIB - LZTT", "Duty end time [UTC]": "06:19:00", "FDP end time [UTC]": "05:49:00", "FDP extension": "", "Split duty time": "", "Discretion for extension": "", "Rest reduction (preceding duty)": "", "Rest required before": "12:00:00", "Rest actual before": "11:20:00", "Rest required after": "10:00:00", "Rest actual after": "22:11:00", "Planned duty length": "02:10:00", "FDP length": "01:49:00", "Max FDP": "13:00:00", "Duty length": "02:19:00", "Planned FDP length": "01:40:00", "Rest [36h]": "19:59:00", "_reasons": ["Rest before (11:20:00) below required (12:00:00)", "Duty length 02:19:00 exceeds planned 02:10:00"], "_id": "ed3e0cf6c705", "_link_id": "4165062da33e", "_link_partners": ["Martin Širko"], "_aliases": [], "_new": true}, {"Crew member": "Patrik Kratochvíl", "Crew code": "KRP", "Duty end date [UTC]": "2026-08-17", "Violation": "Yes", "Route ICAO": "EDLN - LZIB", "Duty end time [UTC]": "16:35:00", "FDP end time [UTC]": "16:05:00", "FDP extension": "", "Split duty time": "", "Discretion for extension": "", "Rest reduction (preceding duty)": "", "Rest required before": "12:00:00", "Rest actual before": "263:45", "Rest required after": "12:00:00", "Rest actual after": "11:05:00", "Planned duty length": "02:50:00", "FDP length": "03:35:00", "Max FDP": "12:30:00", "Duty length": "04:05:00", "Planned FDP length": "02:20:00", "Rest [36h]": "04:05:00", "_reasons": ["Duty length 04:05:00 exceeds planned 02:50:00"], "_id": "8cb0467109a5", "_link_id": "8cb0467109a5", "_link_partners": [], "_aliases": [], "_new": true}, {"Crew member": "Patrik Kratochvíl", "Crew code": "KRP", "Duty end date [UTC]": "2026-08-18", "Violation": "Yes", "Route ICAO": "LZIB - LZTT - EBOS", "Duty end time [UTC]": "09:15:00", "FDP end time [UTC]": "08:45:00", "FDP extension": "", "Split duty time": "", "Discretion for extension": "", "Rest reduction (preceding duty)": "", "Rest required before": "12:00:00", "Rest actual before": "11:05:00", "Rest required after": "10:00:00", "Rest actual after": "28:00", "Planned duty length": "05:30:00", "FDP length": "05:05:00", "Max FDP": "12:40:00", "Duty length": "05:35:00", "Planned FDP length": "05:00:00", "Rest [36h]": "20:45:00", "_reasons": ["Rest before (11:05:00) below required (12:00:00)", "Duty length 05:35:00 exceeds planned 05:30:00"], "_id": "58bd5a465829", "_link_id": "58bd5a465829", "_link_partners": [], "_aliases": ["f7f525c48f26"], "_new": true}, {"Crew member": "Patrik Kratochvíl", "Crew code": "KRP", "Duty end date [UTC]": "2026-08-31", "Violation": "Yes", "Route ICAO": "LZIB - EDDS - EDDL - LZIB", "Duty end time [UTC]": "20:25:00", "FDP end time [UTC]": "19:55:00", "FDP extension": "01:00:00", "Split duty time": "", "Discretion for extension": "", "Rest reduction (preceding duty)": "", "Rest required before": "14:00:00", "Rest actual before": "80:50", "Rest required after": "17:25:00", "Rest actual after": "2307:35", "Planned duty length": "15:05:00", "FDP length": "14:55:00", "Max FDP": "13:30:00", "Duty length": "15:25:00", "Planned FDP length": "14:35:00", "Rest [36h]": "15:25:00", "_reasons": ["FDP length 14:55:00 exceeds Max FDP 13:30:00", "Duty length 15:25:00 exceeds planned 15:05:00"], "_id": "11cf63ddb389", "_link_id": "ec614d222887", "_link_partners": ["Stanislav Stovka"], "_aliases": ["00d63c05a22f"], "_new": true}, {"Crew member": "Stanislav Stovka", "Crew code": "STA", "Duty end date [UTC]": "2026-08-31", "Violation": "Yes", "Route ICAO": "LZIB - EDDS - EDDL - LZIB", "Duty end time [UTC]": "20:25:00", "FDP end time [UTC]": "19:55:00", "FDP extension": "01:00:00", "Split duty time": "", "Discretion for extension": "", "Rest reduction (preceding duty)": "", "Rest required before": "14:00:00", "Rest actual before": "80:50", "Rest required after": "17:25:00", "Rest actual after": "111:10", "Planned duty length": "15:05:00", "FDP length": "14:55:00", "Max FDP": "13:30:00", "Duty length": "15:25:00", "Planned FDP length": "14:35:00", "Rest [36h]": "15:25:00", "_reasons": ["FDP length 14:55:00 exceeds Max FDP 13:30:00", "Duty length 15:25:00 exceeds planned 15:05:00"], "_id": "f37a033d3e7f", "_link_id": "ec614d222887", "_link_partners": ["Patrik Kratochvíl"], "_aliases": ["00d63c05a22f"], "_new": true}];
+  // One-time seed from the previous tracker (browser localStorage doesn't carry over
+  // between origins/sites). Only applied if this browser has never stored anything here.
+  const SEED_HANDLED = {};
+
+  const STORAGE_KEY = "ftl-violation-log:handled";
+
+  function loadHandled() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+      if (SEED_HANDLED && Object.keys(SEED_HANDLED).length) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_HANDLED));
+        return { ...SEED_HANDLED };
+      }
+      return {};
+    } catch (e) {
+      return {};
+    }
+  }
+  function saveHandled(state) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {}
+  }
+
+  let handled = loadHandled();
+  // A duty re-exported with new times replaces the older row; keep any handled mark made on the old one.
+  let migrated = false;
+  for (const r of RECORDS) {
+    if (handled[r._link_id] === undefined && (r._aliases || []).some(a => handled[a])) {
+      handled[r._link_id] = true;
+      migrated = true;
+    }
+  }
+  if (migrated) saveHandled(handled);
+  let currentFilter = "all";
+  let currentSearch = "";
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function matchesSearch(r, term) {
+    if (!term) return true;
+    const haystack = [
+      r["Crew member"], r["Crew code"], r["Duty end date [UTC]"], fmtDate(r["Duty end date [UTC]"]),
+      r["Route ICAO"], r._reasons.join(" "), (r._link_partners || []).join(" "),
+    ].join(" ").toLowerCase();
+    return haystack.includes(term);
+  }
+
+  const DETAIL_FIELDS = [
+    ["Duty end time [UTC]", "Duty end"],
+    ["FDP end time [UTC]", "FDP end"],
+    ["Planned duty length", "Planned duty"],
+    ["Duty length", "Actual duty"],
+    ["Planned FDP length", "Planned FDP"],
+    ["FDP length", "Actual FDP"],
+    ["Max FDP", "Max FDP"],
+    ["FDP extension", "FDP extension"],
+    ["Split duty time", "Split duty"],
+    ["Discretion for extension", "Discretion used"],
+    ["Rest reduction (preceding duty)", "Rest reduction"],
+    ["Rest required before", "Rest req. before"],
+    ["Rest actual before", "Rest actual before"],
+    ["Rest required after", "Rest req. after"],
+    ["Rest actual after", "Rest actual after"],
+    ["Rest [36h]", "Rest (36h window)"],
+  ];
+
+  function fmtDate(iso) {
+    const [y, m, d] = iso.split("-");
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return `${d} ${months[parseInt(m,10)-1]}`;
+  }
+
+  function groupByCrew(records) {
+    const map = new Map();
+    for (const r of records) {
+      if (!map.has(r["Crew member"])) map.set(r["Crew member"], []);
+      map.get(r["Crew member"]).push(r);
+    }
+    return map;
+  }
+
+  function buildDetailGrid(r) {
+    return DETAIL_FIELDS.map(([key, label]) => {
+      const v = r[key] || "—";
+      return `<div class="detail-item"><dt>${label}</dt><dd class="mono">${v}</dd></div>`;
+    }).join("");
+  }
+
+  function render() {
+    const crewList = document.getElementById("crewList");
+    crewList.innerHTML = "";
+    const groups = groupByCrew(RECORDS);
+
+    let totalCount = 0, handledCount = 0;
+    let anyVisible = false;
+
+    for (const [name, recs] of groups) {
+      const code = recs[0]["Crew code"];
+      const isHandled = r => !!handled[r._link_id];
+
+      const groupHandledCount = recs.filter(isHandled).length;
+      totalCount += recs.length;
+      handledCount += groupHandledCount;
+
+      const visibleRecs = recs.filter(r => {
+        if (currentFilter === "open" && isHandled(r)) return false;
+        if (currentFilter === "handled" && !isHandled(r)) return false;
+        return matchesSearch(r, currentSearch);
+      });
+      if (visibleRecs.length === 0) continue;
+      anyVisible = true;
+
+      const card = document.createElement("section");
+      card.className = "crew-card";
+
+      const header = document.createElement("div");
+      header.className = "crew-header";
+      header.innerHTML = `
+        <span class="crew-name">${name}</span>
+        <span class="crew-code">${code}</span>
+        <span class="crew-progress"><b>${groupHandledCount}</b>/${recs.length} cleared</span>
+      `;
+      card.appendChild(header);
+
+      const list = document.createElement("ul");
+      list.className = "violation-list";
+
+      for (const r of visibleRecs) {
+        const li = document.createElement("li");
+        li.className = "violation-row";
+        const rHandled = isHandled(r);
+
+        const reasonChips = r._reasons.map(txt => `<span class="reason-chip">${txt}</span>`).join("");
+        const linkNote = r._link_partners && r._link_partners.length
+          ? `<div class="row-link" title="Same duty — marking handled applies to both pilots">&#128279; also crewed by ${r._link_partners.join(", ")}</div>`
+          : "";
+        const newTag = r._new ? `<span class="new-tag">New</span>` : "";
+
+        li.innerHTML = `
+          <div class="row-main" data-handled="${rHandled}">
+            <span class="row-date mono">${fmtDate(r["Duty end date [UTC]"])}</span>
+            <div class="row-body">
+              <div class="row-route">${newTag}<span>${r["Route ICAO"]}</span></div>
+              <div class="row-reasons">${reasonChips}</div>
+              ${linkNote}
+            </div>
+            <button class="row-expand" type="button" aria-expanded="false" title="Show full record">&#9662;</button>
+            <button class="handle-switch" type="button" aria-pressed="${rHandled}" data-link-id="${r._link_id}">
+              <span class="switch-track"></span>
+              <span class="switch-label">${rHandled ? "HANDLED" : "OPEN"}</span>
+            </button>
+          </div>
+          <div class="row-detail" hidden>
+            <dl class="detail-grid">${buildDetailGrid(r)}</dl>
+          </div>
+        `;
+
+        const expandBtn = li.querySelector(".row-expand");
+        const detail = li.querySelector(".row-detail");
+        expandBtn.addEventListener("click", () => {
+          const open = !detail.hidden;
+          detail.hidden = open;
+          expandBtn.setAttribute("aria-expanded", String(!open));
+          expandBtn.innerHTML = open ? "&#9662;" : "&#9652;";
+        });
+
+        const toggleBtn = li.querySelector(".handle-switch");
+        toggleBtn.addEventListener("click", () => {
+          const linkId = toggleBtn.getAttribute("data-link-id");
+          handled[linkId] = !handled[linkId];
+          saveHandled(handled);
+          render();
+        });
+
+        list.appendChild(li);
+      }
+
+      card.appendChild(list);
+      crewList.appendChild(card);
+    }
+
+    if (!anyVisible) {
+      const scope = currentFilter === "all" ? "violations" : `${currentFilter} violations`;
+      const forTerm = currentSearch ? ` matching &ldquo;${escapeHtml(currentSearch)}&rdquo;` : "";
+      crewList.innerHTML = `<div class="empty-state">No ${scope} found${forTerm}.</div>`;
+    }
+
+    document.getElementById("statTotal").textContent = totalCount;
+    document.getElementById("statOpen").textContent = totalCount - handledCount;
+    document.getElementById("statHandled").textContent = handledCount;
+  }
+
+  document.querySelectorAll(".filter-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentFilter = btn.getAttribute("data-filter");
+      render();
+    });
+  });
+
+  const searchInput = document.getElementById("searchInput");
+  const searchClear = document.getElementById("searchClear");
+  searchInput.addEventListener("input", () => {
+    currentSearch = searchInput.value.trim().toLowerCase();
+    searchClear.hidden = currentSearch.length === 0;
+    render();
+  });
+  searchClear.addEventListener("click", () => {
+    searchInput.value = "";
+    currentSearch = "";
+    searchClear.hidden = true;
+    searchInput.focus();
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>
