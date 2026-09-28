@@ -12,10 +12,15 @@ browser-side "Update data" push can compare real timestamps, not just
 assume a new upload is newer) and regenerates index.html from template.html.
 
 Usage: ./venv/bin/python build.py   (or just ./rebuild.sh, which also commits+pushes)
+       ./venv/bin/python build.py --render-only   (regenerate index.html from
+       the existing data/final_records.json without rescanning xlsx — use
+       this if the web page has pushed newer data than this machine has
+       local xlsx files for)
 """
 import glob
 import os
 import re
+import sys
 import json
 import hashlib
 import datetime
@@ -178,7 +183,34 @@ def build_records():
     return records, files, n_raw, dropped, n_pairs
 
 
+def render_html():
+    """Regenerate index.html from template.html + whatever is currently in
+    data/final_records.json, without touching the data itself. Use this after
+    a template.html change when data/final_records.json is already ahead of
+    this machine's local xlsx files — e.g. someone pushed an update from the
+    web page since this machine's last `./rebuild.sh`. Running the normal
+    scan-and-rebuild in that situation would silently discard that newer
+    data, since it only ever knows about xlsx files present on this machine.
+    """
+    seed_handled = {}
+    if os.path.exists(SEED_HANDLED_FILE):
+        with open(SEED_HANDLED_FILE) as fh:
+            seed_handled = json.load(fh)
+    with open(TEMPLATE_FILE) as fh:
+        html = fh.read()
+    html = html.replace("__SEED_HANDLED_JSON__", json.dumps(seed_handled, ensure_ascii=False))
+    with open(OUTPUT_FILE, "w") as fh:
+        fh.write(html)
+    with open(DATA_FILE) as fh:
+        meta = json.load(fh).get("meta", {})
+    print(f"Rendered index.html from existing data/final_records.json (meta: {meta})")
+
+
 def main():
+    if "--render-only" in sys.argv:
+        render_html()
+        return
+
     records, files, n_raw, dropped, n_pairs = build_records()
 
     meta = {
@@ -192,15 +224,7 @@ def main():
     with open(DATA_FILE, "w") as fh:
         json.dump({"meta": meta, "records": records}, fh, indent=2, ensure_ascii=False)
 
-    seed_handled = {}
-    if os.path.exists(SEED_HANDLED_FILE):
-        with open(SEED_HANDLED_FILE) as fh:
-            seed_handled = json.load(fh)
-    with open(TEMPLATE_FILE) as fh:
-        html = fh.read()
-    html = html.replace("__SEED_HANDLED_JSON__", json.dumps(seed_handled, ensure_ascii=False))
-    with open(OUTPUT_FILE, "w") as fh:
-        fh.write(html)
+    render_html()
 
     print(
         f"{len(files)} xlsx files | {n_raw} raw rows | {len(records) + len(dropped)} unique | "
