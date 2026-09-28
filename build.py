@@ -6,8 +6,10 @@ merges them, dedupes exact-duplicate rows, then collapses re-exports of the
 same (pilot, date, route) down to the row from the newest file (recalculation
 drift across daily exports otherwise creates near-duplicate rows). Computes
 why each row was flagged, and links duty pairs flown by two pilots so a
-single "handled" mark covers both. Writes data/final_records.json and
-regenerates index.html from template.html.
+single "handled" mark covers both. Writes data/final_records.json (each
+record keeps its source file's mtime as `_export_mtime` so a later
+browser-side "Update data" push can compare real timestamps, not just
+assume a new upload is newer) and regenerates index.html from template.html.
 
 Usage: ./venv/bin/python build.py   (or just ./rebuild.sh, which also commits+pushes)
 """
@@ -29,7 +31,6 @@ TEMPLATE_FILE = os.path.join(REPO_DIR, "template.html")
 OUTPUT_FILE = os.path.join(REPO_DIR, "index.html")
 
 SHARED_DUTY_FIELDS = ["Duty end date [UTC]", "Route ICAO", "Duty end time [UTC]", "FDP end time [UTC]"]
-MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 
 def norm(v):
@@ -56,7 +57,9 @@ def load_previous_ids():
     if not os.path.exists(DATA_FILE):
         return set()
     with open(DATA_FILE) as fh:
-        return {r["_id"] for r in json.load(fh)}
+        data = json.load(fh)
+    records = data if isinstance(data, list) else data.get("records", [])  # old bare-array format
+    return {r["_id"] for r in records}
 
 
 def read_rows():
@@ -169,7 +172,8 @@ def build_records():
     for r in records:
         r["_aliases"] = [a for a in r["_aliases"] if a != r["_link_id"]]
         r["_new"] = r["_id"] not in previous_ids
-        del r["_export_mtime"]
+        # Kept (seconds since epoch) so a later browser-side merge can compare
+        # against a newly uploaded file's lastModified and pick the true newest.
 
     return records, files, n_raw, dropped, n_pairs
 
@@ -177,32 +181,31 @@ def build_records():
 def main():
     records, files, n_raw, dropped, n_pairs = build_records()
 
+    meta = {
+        "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+        "source": "local",
+        "record_count": len(records),
+        "pilot_count": len({r["Crew member"] for r in records}),
+        "paired_duties": n_pairs,
+    }
     os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
     with open(DATA_FILE, "w") as fh:
-        json.dump(records, fh, indent=2, ensure_ascii=False)
+        json.dump({"meta": meta, "records": records}, fh, indent=2, ensure_ascii=False)
 
-    latest = max(r["Duty end date [UTC]"] for r in records)
-    y, m, d = latest.split("-")
     seed_handled = {}
     if os.path.exists(SEED_HANDLED_FILE):
         with open(SEED_HANDLED_FILE) as fh:
             seed_handled = json.load(fh)
     with open(TEMPLATE_FILE) as fh:
         html = fh.read()
-    html = (
-        html.replace("__RECORDS_JSON__", json.dumps(records, ensure_ascii=False))
-        .replace("__SEED_HANDLED_JSON__", json.dumps(seed_handled, ensure_ascii=False))
-        .replace("__FILE_COUNT__", str(len(files)))
-        .replace("__LATEST_DATE__", f"{int(d)} {MONTHS[int(m) - 1]}")
-        .replace("__BUILD_DATE__", datetime.date.today().isoformat())
-    )
+    html = html.replace("__SEED_HANDLED_JSON__", json.dumps(seed_handled, ensure_ascii=False))
     with open(OUTPUT_FILE, "w") as fh:
         fh.write(html)
 
     print(
         f"{len(files)} xlsx files | {n_raw} raw rows | {len(records) + len(dropped)} unique | "
         f"{len(records)} after collapse ({len(dropped)} superseded) | "
-        f"{len({r['Crew member'] for r in records})} pilots | {n_pairs} paired duties | "
+        f"{meta['pilot_count']} pilots | {n_pairs} paired duties | "
         f"{sum(r['_new'] for r in records)} new since last build"
     )
 
