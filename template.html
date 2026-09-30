@@ -80,6 +80,23 @@
     margin: 0 0 2px;
     text-wrap: balance;
   }
+  .updated-line {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--text);
+    margin: 0 0 6px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+  .updated-line .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--text-dim);
+    flex: none;
+  }
+  .updated-line.fresh .dot { background: var(--ok); }
+  .updated-line .ago { color: var(--text-dim); }
   .subtitle {
     color: var(--text-dim);
     font-size: 12.5px;
@@ -496,6 +513,7 @@
 
 <div class="wrap">
   <h1>FTL Violation Log</h1>
+  <p class="updated-line" id="updatedLine">Data last updated: loading&hellip;</p>
   <p class="subtitle" id="subtitleText">Loading&hellip;</p>
 
   <div class="board">
@@ -774,9 +792,29 @@
     document.getElementById("subtitleText").textContent =
       `${RECORDS.length} deduplicated flight duty period & rest violations across ${pilotCount} pilots ` +
       `(${pairedCount} two-pilot duties linked, so marking one handled clears both)`;
-    const when = META.generated_at ? new Date(META.generated_at).toLocaleString() : "unknown";
-    document.getElementById("buildNote").innerHTML =
-      `data last updated ${when} &middot; source: <a href="https://github.com/tomasdrobnik/FTL_check">github.com/tomasdrobnik/FTL_check</a>`;
+    const line = document.getElementById("updatedLine");
+    const generated = META.generated_at ? new Date(META.generated_at) : null;
+    if (generated && !Number.isNaN(generated.getTime())) {
+      const ageMs = Date.now() - generated.getTime();
+      const via = META.source === "web" ? "web upload" : META.source === "local" ? "local rebuild" : "";
+      line.classList.toggle("fresh", ageMs < 60 * 60 * 1000);
+      line.innerHTML =
+        `<span class="dot"></span><span>Data last updated: <b>${escapeHtml(generated.toLocaleString())}</b></span>` +
+        `<span class="ago">(${timeAgo(generated)}${via ? " &middot; " + via : ""})</span>`;
+    } else {
+      line.classList.remove("fresh");
+      line.textContent = "Data last updated: unknown";
+    }
+  }
+
+  function timeAgo(d) {
+    const s = Math.max(0, Math.round((Date.now() - d.getTime()) / 1000));
+    if (s < 60) return "just now";
+    const m = Math.round(s / 60);
+    if (m < 60) return `${m} min ago`;
+    const h = Math.round(m / 60);
+    if (h < 48) return `${h} h ago`;
+    return `${Math.round(h / 24)} days ago`;
   }
 
   document.querySelectorAll(".filter-btn").forEach(btn => {
@@ -805,7 +843,8 @@
 
   async function loadData() {
     try {
-      const res = await fetch("./data/final_records.json", { cache: "no-store" });
+      // Unique query string so the Pages CDN can't hand back a cached copy of an older push.
+      const res = await fetch(`./data/final_records.json?t=${Date.now()}`, { cache: "no-store" });
       const data = await res.json();
       RECORDS = data.records || [];
       META = data.meta || {};
