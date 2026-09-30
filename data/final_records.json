@@ -1,12 +1,46 @@
 {
   "meta": {
-    "generated_at": "2026-09-28T16:01:33.127Z",
+    "generated_at": "2026-09-30T11:43:11.152Z",
     "source": "web",
-    "record_count": 25,
-    "pilot_count": 12,
-    "paired_duties": 10
+    "record_count": 31,
+    "pilot_count": 14,
+    "paired_duties": 13
   },
   "records": [
+    {
+      "Crew member": "Jiri Kopal",
+      "Crew code": "KOP",
+      "Duty end date [UTC]": "2026-09-30",
+      "Violation": "Yes",
+      "Route ICAO": "EDDN - LKTB",
+      "Duty end time [UTC]": "15:50:00",
+      "FDP end time [UTC]": "15:20:00",
+      "FDP extension": "",
+      "Split duty time": "",
+      "Discretion for extension": "",
+      "Rest reduction (preceding duty)": "",
+      "Rest required before": "13:40:00",
+      "Rest actual before": "284:05",
+      "Rest required after": "12:00:00",
+      "Rest actual after": "10:50:00",
+      "Planned duty length": "02:05:00",
+      "FDP length": "01:35:00",
+      "Max FDP": "12:05:00",
+      "Duty length": "02:05:00",
+      "Planned FDP length": "01:35:00",
+      "Rest [36h]": "02:05:00",
+      "_reasons": [
+        "Rest after this duty (10:50:00) below required (12:00:00) — same gap is flagged as 'Rest before' on the next duty"
+      ],
+      "_id": "2f9c2fc4cd35",
+      "_export_mtime": 1790768397.24,
+      "_link_id": "aafddda3d5f0",
+      "_link_partners": [
+        "Petr Brandejsky"
+      ],
+      "_aliases": [],
+      "_new": true
+    },
     {
       "Crew member": "Juraj Matúšek",
       "Crew code": "MAT",
@@ -143,7 +177,7 @@
         "Stanislav Stovka"
       ],
       "_aliases": [],
-      "_new": true
+      "_new": false
     },
     {
       "Crew member": "Karol Beňo",
@@ -179,7 +213,7 @@
       "_aliases": [
         "4aa059ed4636"
       ],
-      "_new": true
+      "_new": false
     },
     {
       "Crew member": "Marian Januscak",
@@ -458,6 +492,74 @@
       "_new": false
     },
     {
+      "Crew member": "Martin Širko",
+      "Crew code": "SIR",
+      "Duty end date [UTC]": "2026-09-29",
+      "Violation": "Yes",
+      "Route ICAO": "LDZD - LDSP - LZIB",
+      "Duty end time [UTC]": "17:28:00",
+      "FDP end time [UTC]": "16:58:00",
+      "FDP extension": "",
+      "Split duty time": "",
+      "Discretion for extension": "",
+      "Rest reduction (preceding duty)": "",
+      "Rest required before": "10:00:00",
+      "Rest actual before": "16:15:00",
+      "Rest required after": "12:00:00",
+      "Rest actual after": "10:07:00",
+      "Planned duty length": "03:25:00",
+      "FDP length": "06:43:00",
+      "Max FDP": "13:00:00",
+      "Duty length": "07:13:00",
+      "Planned FDP length": "02:55:00",
+      "Rest [36h]": "27:28",
+      "_reasons": [
+        "Duty length 07:13:00 exceeds planned 03:25:00"
+      ],
+      "_id": "7e0651342ae0",
+      "_export_mtime": 1790768397.24,
+      "_link_id": "159263827b3a",
+      "_link_partners": [
+        "Miroslav Stejskal"
+      ],
+      "_aliases": [],
+      "_new": true
+    },
+    {
+      "Crew member": "Martin Širko",
+      "Crew code": "SIR",
+      "Duty end date [UTC]": "2026-09-30",
+      "Violation": "Yes",
+      "Route ICAO": "LZIB - LZTT - LDZA - LZTT",
+      "Duty end time [UTC]": "13:05:00",
+      "FDP end time [UTC]": "12:35:00",
+      "FDP extension": "",
+      "Split duty time": "03:38:00",
+      "Discretion for extension": "",
+      "Rest reduction (preceding duty)": "",
+      "Rest required before": "12:00:00",
+      "Rest actual before": "10:07:00",
+      "Rest required after": "10:00:00",
+      "Rest actual after": ">1year",
+      "Planned duty length": "09:30:00",
+      "FDP length": "09:00:00",
+      "Max FDP": "15:43:00",
+      "Duty length": "09:30:00",
+      "Planned FDP length": "09:00:00",
+      "Rest [36h]": "47:05",
+      "_reasons": [
+        "Rest before (10:07:00) below required (12:00:00)"
+      ],
+      "_id": "dcda824ab995",
+      "_export_mtime": 1790768397.24,
+      "_link_id": "80ad16dc7fcb",
+      "_link_partners": [
+        "Miroslav Stejskal"
+      ],
+      "_aliases": [],
+      "_new": true
+    },
+    {
       "Crew member": "Milan Hankovský",
       "Crew code": "HNK",
       "Duty end date [UTC]": "2026-08-18",
@@ -629,6 +731,74 @@
         "Tomas Sisak"
       ],
       "_aliases": [],
+      "_new": false
+    },
+    {
+      "Crew member": "Miroslav Stejskal",
+      "Crew code": "STJ",
+      "Duty end date [UTC]": "2026-09-29",
+      "Violation": "Yes",
+      "Route ICAO": "LDZD - LDSP - LZIB",
+      "Duty end time [UTC]": "17:28:00",
+      "FDP end time [UTC]": "16:58:00",
+      "FDP extension": "",
+      "Split duty time": "",
+      "Discretion for extension": "",
+      "Rest reduction (preceding duty)": "",
+      "Rest required before": "10:00:00",
+      "Rest actual before": "16:15:00",
+      "Rest required after": "12:00:00",
+      "Rest actual after": "10:07:00",
+      "Planned duty length": "03:25:00",
+      "FDP length": "06:43:00",
+      "Max FDP": "13:00:00",
+      "Duty length": "07:13:00",
+      "Planned FDP length": "02:55:00",
+      "Rest [36h]": "27:28",
+      "_reasons": [
+        "Duty length 07:13:00 exceeds planned 03:25:00"
+      ],
+      "_id": "2071ef1a9fa7",
+      "_export_mtime": 1790768397.24,
+      "_link_id": "159263827b3a",
+      "_link_partners": [
+        "Martin Širko"
+      ],
+      "_aliases": [],
+      "_new": true
+    },
+    {
+      "Crew member": "Miroslav Stejskal",
+      "Crew code": "STJ",
+      "Duty end date [UTC]": "2026-09-30",
+      "Violation": "Yes",
+      "Route ICAO": "LZIB - LZTT - LDZA - LZTT",
+      "Duty end time [UTC]": "13:05:00",
+      "FDP end time [UTC]": "12:35:00",
+      "FDP extension": "",
+      "Split duty time": "03:38:00",
+      "Discretion for extension": "",
+      "Rest reduction (preceding duty)": "",
+      "Rest required before": "12:00:00",
+      "Rest actual before": "10:07:00",
+      "Rest required after": "10:00:00",
+      "Rest actual after": "22:10:00",
+      "Planned duty length": "09:30:00",
+      "FDP length": "09:00:00",
+      "Max FDP": "15:43:00",
+      "Duty length": "09:30:00",
+      "Planned FDP length": "09:00:00",
+      "Rest [36h]": "47:05",
+      "_reasons": [
+        "Rest before (10:07:00) below required (12:00:00)"
+      ],
+      "_id": "44bef1e3f7be",
+      "_export_mtime": 1790768397.24,
+      "_link_id": "80ad16dc7fcb",
+      "_link_partners": [
+        "Martin Širko"
+      ],
+      "_aliases": [],
       "_new": true
     },
     {
@@ -736,6 +906,40 @@
       "_new": false
     },
     {
+      "Crew member": "Petr Brandejsky",
+      "Crew code": "BRA",
+      "Duty end date [UTC]": "2026-09-30",
+      "Violation": "Yes",
+      "Route ICAO": "EDDN - LKTB",
+      "Duty end time [UTC]": "15:50:00",
+      "FDP end time [UTC]": "15:20:00",
+      "FDP extension": "",
+      "Split duty time": "",
+      "Discretion for extension": "",
+      "Rest reduction (preceding duty)": "",
+      "Rest required before": "12:00:00",
+      "Rest actual before": "304:25",
+      "Rest required after": "12:00:00",
+      "Rest actual after": "10:50:00",
+      "Planned duty length": "02:05:00",
+      "FDP length": "01:35:00",
+      "Max FDP": "12:05:00",
+      "Duty length": "02:05:00",
+      "Planned FDP length": "01:35:00",
+      "Rest [36h]": "02:05:00",
+      "_reasons": [
+        "Rest after this duty (10:50:00) below required (12:00:00) — same gap is flagged as 'Rest before' on the next duty"
+      ],
+      "_id": "ffe5b974f91b",
+      "_export_mtime": 1790768397.24,
+      "_link_id": "aafddda3d5f0",
+      "_link_partners": [
+        "Jiri Kopal"
+      ],
+      "_aliases": [],
+      "_new": true
+    },
+    {
       "Crew member": "Stanislav Stovka",
       "Crew code": "STA",
       "Duty end date [UTC]": "2026-08-31",
@@ -804,7 +1008,7 @@
         "Karol Beňo"
       ],
       "_aliases": [],
-      "_new": true
+      "_new": false
     },
     {
       "Crew member": "Stanislav Stovka",
@@ -840,7 +1044,7 @@
       "_aliases": [
         "4aa059ed4636"
       ],
-      "_new": true
+      "_new": false
     },
     {
       "Crew member": "Tomas Sisak",
@@ -874,7 +1078,7 @@
         "Miroslav Stejskal"
       ],
       "_aliases": [],
-      "_new": true
+      "_new": false
     }
   ]
 }
