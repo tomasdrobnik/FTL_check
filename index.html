@@ -80,6 +80,28 @@
     margin: 0 0 2px;
     text-wrap: balance;
   }
+  .title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  .title-row h1 { margin: 0; }
+  .upload-btn {
+    flex: none;
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--accent);
+    background: var(--accent-soft);
+    color: var(--text);
+    cursor: pointer;
+  }
+  .upload-btn:hover { background: var(--accent); color: var(--bg); }
+  .upload-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .updated-line {
     font-family: "IBM Plex Mono", ui-monospace, monospace;
     font-size: 12px;
@@ -512,7 +534,10 @@
 <body>
 
 <div class="wrap">
-  <h1>FTL Violation Log</h1>
+  <div class="title-row">
+    <h1>FTL Violation Log</h1>
+    <button type="button" class="upload-btn" id="uploadBtn" title="Select FTL export .xlsx file(s) to merge into the log">Upload data</button>
+  </div>
   <p class="updated-line" id="updatedLine">Data last updated: loading&hellip;</p>
   <p class="subtitle" id="subtitleText">Loading&hellip;</p>
 
@@ -1122,7 +1147,7 @@
   }
   function clearLog() { parseLog.innerHTML = ""; parseLog.hidden = true; }
 
-  parseBtn.addEventListener("click", async () => {
+  async function parseSelectedFiles() {
     clearLog();
     pushResult.hidden = true;
     pushBtn.disabled = true;
@@ -1158,6 +1183,24 @@
     } catch (e) {
       logLine(`<span class="log-error">Merge failed: ${escapeHtml(e.message)}</span>`);
     }
+  }
+
+  parseBtn.addEventListener("click", parseSelectedFiles);
+
+  // Top-of-page "Upload data": open the native file dialog; as soon as files
+  // are chosen, parse them and bring the results (and the push step) into view.
+  const uploadBtn = document.getElementById("uploadBtn");
+  const updatePanel = document.getElementById("updatePanel");
+  uploadBtn.addEventListener("click", () => {
+    fileInput.value = ""; // so re-picking the same file still fires "change"
+    fileInput.click();
+  });
+  fileInput.addEventListener("change", async () => {
+    if (!fileInput.files.length) return;
+    updatePanel.open = true;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    updatePanel.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    await parseSelectedFiles();
   });
 
   function b64EncodeUnicode(str) {
